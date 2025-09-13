@@ -8,7 +8,7 @@ public class Projectile : MonoBehaviour
     [SerializeField] private float lifeTime = 5f;
 
     [Header("Damage")]
-    [SerializeField] private float damage = 10f;   // 👈 This is the field
+    [SerializeField] private float damage = 10f;   // default, can be overridden by Initialize
     [SerializeField] private bool destroyOnHit = true;
 
     private Vector2 direction = Vector2.right;
@@ -20,9 +20,9 @@ public class Projectile : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<Collider2D>();
 
-        rb.bodyType = RigidbodyType2D.Kinematic;
+        rb.bodyType = RigidbodyType2D.Kinematic;                       // modern setup
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-        col.isTrigger = true;
+        col.isTrigger = true;                                          // so OnTriggerEnter2D fires reliably
     }
 
     void OnEnable()
@@ -40,19 +40,17 @@ public class Projectile : MonoBehaviour
         rb.MovePosition(rb.position + direction.normalized * speed * Time.fixedDeltaTime);
     }
 
-    // Called by PlayerShooting
+    // Called by PlayerShooting when bullet is spawned
     public void Initialize(Vector2 dir, float dmg)
     {
         direction = dir.normalized;
-        damage = dmg;   // 👈 Assigns the field above
+        damage = dmg;
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
+        // --- Player ---
         var playerHealth = other.GetComponentInParent<PlayerHealth>();
-        var enemyHealth = other.GetComponentInParent<EnemyHealth>();
-        var bossHealth = other.GetComponentInParent<BossHealth>();
-
         if (playerHealth != null)
         {
             playerHealth.TakeDamage(Mathf.RoundToInt(damage));
@@ -60,6 +58,8 @@ public class Projectile : MonoBehaviour
             return;
         }
 
+        // --- Enemy ---
+        var enemyHealth = other.GetComponentInParent<EnemyHealth>();
         if (enemyHealth != null)
         {
             enemyHealth.TakeDamage(Mathf.RoundToInt(damage));
@@ -67,6 +67,8 @@ public class Projectile : MonoBehaviour
             return;
         }
 
+        // --- Boss ---
+        var bossHealth = other.GetComponentInParent<BossHealth>();
         if (bossHealth != null)
         {
             bossHealth.TakeDamage(Mathf.RoundToInt(damage));
@@ -74,7 +76,6 @@ public class Projectile : MonoBehaviour
             return;
         }
     }
-
 
     void Despawn()
     {
