@@ -1,45 +1,83 @@
-using UnityEngine;
+﻿using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))]
 public class Projectile : MonoBehaviour
 {
-    [SerializeField] int damage = 1;
-    [SerializeField] float lifetime = 5f; // auto-cleanup if it misses
+    [Header("Flight")]
+    [SerializeField] private float speed = 12f;
+    [SerializeField] private float lifeTime = 5f;
+
+    [Header("Damage")]
+    [SerializeField] private float damage = 10f;   // 👈 This is the field
+    [SerializeField] private bool destroyOnHit = true;
+
+    private Vector2 direction = Vector2.right;
+    private Rigidbody2D rb;
+    private Collider2D col;
 
     void Awake()
     {
-        Destroy(gameObject, lifetime);
+        rb = GetComponent<Rigidbody2D>();
+        col = GetComponent<Collider2D>();
+
+        rb.bodyType = RigidbodyType2D.Kinematic;
+        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+        col.isTrigger = true;
     }
 
-    private void OnTriggerEnter2D(Collider2D other)
+    void OnEnable()
     {
-        // Player
-        var player = other.GetComponent<PlayerHealth>();
-        if (player != null)
+        if (lifeTime > 0f) Invoke(nameof(Despawn), lifeTime);
+    }
+
+    void OnDisable()
+    {
+        CancelInvoke(nameof(Despawn));
+    }
+
+    void FixedUpdate()
+    {
+        rb.MovePosition(rb.position + direction.normalized * speed * Time.fixedDeltaTime);
+    }
+
+    // Called by PlayerShooting
+    public void Initialize(Vector2 dir, float dmg)
+    {
+        direction = dir.normalized;
+        damage = dmg;   // 👈 Assigns the field above
+    }
+
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        var playerHealth = other.GetComponentInParent<PlayerHealth>();
+        var enemyHealth = other.GetComponentInParent<EnemyHealth>();
+        var bossHealth = other.GetComponentInParent<BossHealth>();
+
+        if (playerHealth != null)
         {
-            player.TakeDamage(damage);
-            Destroy(gameObject);
+            playerHealth.TakeDamage(Mathf.RoundToInt(damage));
+            if (destroyOnHit) Despawn();
             return;
         }
 
-        //// Enemy
-        //var enemy = other.GetComponent<EnemyHealth>();
-        //if (enemy != null)
-        //{
-        //    enemy.TakeDamage(damage);
-        //    Destroy(gameObject);
-        //    return;
-        //}
-
-        // Boss
-        var boss = other.GetComponent<BossHealth>();
-        if (boss != null)
+        if (enemyHealth != null)
         {
-            boss.TakeDamage(damage);
-            Destroy(gameObject);
+            enemyHealth.TakeDamage(Mathf.RoundToInt(damage));
+            if (destroyOnHit) Despawn();
             return;
         }
 
-        // If it hits anything else, destroy the object
+        if (bossHealth != null)
+        {
+            bossHealth.TakeDamage(Mathf.RoundToInt(damage));
+            if (destroyOnHit) Despawn();
+            return;
+        }
+    }
+
+
+    void Despawn()
+    {
         Destroy(gameObject);
     }
 }

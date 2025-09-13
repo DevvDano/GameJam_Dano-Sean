@@ -1,100 +1,90 @@
-using UnityEditor.Callbacks;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
-    [Header("Player Component References")]
+    [Header("Refs")]
     [SerializeField] private Rigidbody2D playerRigidbody;
 
-    [Header("Player Movement Settings")]
-    [SerializeField] private float moveSpeed;
-    [SerializeField] private float jumpForce;
+    [Header("Movement")]
+    [SerializeField] private float moveSpeed = 7f;
 
-    [Header("Ground Check Settings")]
+    [Header("Jump")]
+    [SerializeField] private float jumpForce = 12f;
+    [SerializeField] private float coyoteTime = 0.1f;
+    [SerializeField] private float jumpBufferTime = 0.1f;
+
+    [Header("Ground Check")]
     [SerializeField] private Transform groundCheck;
-    [SerializeField] LayerMask groundLayer;
-
-    [Header("Projectile Settings")]
-    [SerializeField] private GameObject projectilePrefab;
-    [SerializeField] private Transform firePoint;
-    [SerializeField] private float projectileForce;
+    [SerializeField] private Vector2 groundCheckSize = new Vector2(1f, 0.1f);
+    [SerializeField] private LayerMask groundLayer;
 
     private float horizontal;
+    private float coyoteCounter;
+    private float jumpBufferCounter;
 
-    private void FixedUpdate()
+    void Reset() { playerRigidbody = GetComponent<Rigidbody2D>(); }
+
+    void Update()
     {
-        // Handle horizontal movement
+        // coyote / buffer
+        if (IsGrounded()) coyoteCounter = coyoteTime; else coyoteCounter -= Time.deltaTime;
+
+        if (jumpBufferCounter > 0f)
+        {
+            if (coyoteCounter > 0f) { DoJump(); jumpBufferCounter = 0f; }
+            else jumpBufferCounter -= Time.deltaTime;
+        }
+
+        // flip sprite
+        if (horizontal > 0.1f) transform.localScale = new Vector3(1f, 1f, 1f);
+        else if (horizontal < -0.1f) transform.localScale = new Vector3(-1f, 1f, 1f);
+    }
+
+    void FixedUpdate()
+    {
         playerRigidbody.linearVelocity = new Vector2(horizontal * moveSpeed, playerRigidbody.linearVelocity.y);
     }
 
-    #region PLAYER_CONTROLLER
-    public void Move(InputAction.CallbackContext context)
+    // === Input System (Send Messages expects method names == action names) ===
+    public void Move(InputAction.CallbackContext ctx)
     {
-        horizontal = context.ReadValue<Vector2>().x;
+        horizontal = ctx.ReadValue<Vector2>().x;
     }
 
-    //Flip the player sprite based on movement direction
-    private void LateUpdate()
+    public void Jump(InputAction.CallbackContext ctx)
     {
-        if (horizontal > 0.1f)
-            transform.localScale = new Vector3(1, 1, 1);
-        else if (horizontal < -0.1f)
-            transform.localScale = new Vector3(-1, 1, 1);
-    }
-
-    public void Jump(InputAction.CallbackContext context)
-    {
-        if (context.performed && IsGrounded())
+        if (ctx.performed)
         {
-            playerRigidbody.linearVelocity = new Vector2(playerRigidbody.linearVelocity.x, jumpForce);
+            jumpBufferCounter = jumpBufferTime;
+            if (coyoteCounter > 0f) { DoJump(); jumpBufferCounter = 0f; }
+        }
+        else if (ctx.canceled)
+        {
+            if (playerRigidbody.linearVelocity.y > 0f)
+                playerRigidbody.linearVelocity = new Vector2(playerRigidbody.linearVelocity.x, playerRigidbody.linearVelocity.y * 0.6f);
         }
     }
+
+    // === Helpers ===
+    private void DoJump()
+    {
+        playerRigidbody.linearVelocity = new Vector2(playerRigidbody.linearVelocity.x, 0f);
+        playerRigidbody.linearVelocity += Vector2.up * jumpForce;
+        coyoteCounter = 0f;
+    }
+
     private bool IsGrounded()
     {
-        return Physics2D.OverlapCapsule(groundCheck.position, new Vector2(1f, 0.1f), CapsuleDirection2D.Horizontal, 0f, groundLayer);
+        return Physics2D.OverlapCapsule(groundCheck.position, groundCheckSize, CapsuleDirection2D.Horizontal, 0f, groundLayer);
     }
-    #endregion
 
-    #region PLAYER_COMBAT
-
-    public void FireProjectile(InputAction.CallbackContext context)
+#if UNITY_EDITOR
+    void OnDrawGizmosSelected()
     {
-        if (!context.performed) return;
-
-        if (projectilePrefab == null || firePoint == null)
-        {
-            Debug.LogError("Projectile prefab or FirePoint not assigned on PlayerMovement!");
-            return;
-        }
-
-        GameObject projectile = Instantiate(projectilePrefab, firePoint.position, firePoint.rotation);
-
-        var rb = projectile.GetComponent<Rigidbody2D>();
-        if (rb == null)
-        {
-            Debug.LogError("Projectile prefab needs a Rigidbody2D.");
-            Destroy(projectile);
-            return;
-        }
-
-        float direction = Mathf.Sign(transform.localScale.x);
-        Vector2 shootDir = new Vector2(direction, 0f);
-
-        // For kinematic bullets, set velocity directly
-        rb.linearVelocity = shootDir * projectileForce;
-
+        if (!groundCheck) return;
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireCube(groundCheck.position, groundCheckSize);
     }
-
-
-    public void MeleeAttack(InputAction.CallbackContext context)
-    {
-        if (context.performed)
-        {
-            // Implement melee attack logic here
-            Debug.Log("Melee Attack Executed");
-        }
-    }
-
-    #endregion
+#endif
 }
