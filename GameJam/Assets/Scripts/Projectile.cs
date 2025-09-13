@@ -8,15 +8,12 @@ public class Projectile : MonoBehaviour
     [SerializeField] private float lifeTime = 5f;
 
     [Header("Damage")]
-    [SerializeField] private float damage = 10f;
+    [SerializeField] private float damage = 10f;   // 👈 This is the field
     [SerializeField] private bool destroyOnHit = true;
 
     private Vector2 direction = Vector2.right;
     private Rigidbody2D rb;
     private Collider2D col;
-
-    public float Damage => damage;
-    public bool DestroyOnHit => destroyOnHit;
 
     void Awake()
     {
@@ -30,8 +27,7 @@ public class Projectile : MonoBehaviour
 
     void OnEnable()
     {
-        if (lifeTime > 0f)
-            Invoke(nameof(Despawn), lifeTime);
+        if (lifeTime > 0f) Invoke(nameof(Despawn), lifeTime);
     }
 
     void OnDisable()
@@ -44,12 +40,41 @@ public class Projectile : MonoBehaviour
         rb.MovePosition(rb.position + direction.normalized * speed * Time.fixedDeltaTime);
     }
 
-    // 👇 THIS is what PlayerShooting_Generated is calling
+    // Called by PlayerShooting
     public void Initialize(Vector2 dir, float dmg)
     {
         direction = dir.normalized;
-        damage = dmg;
+        damage = dmg;   // 👈 Assigns the field above
     }
+
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        var playerHealth = other.GetComponentInParent<PlayerHealth>();
+        var enemyHealth = other.GetComponentInParent<EnemyHealth>();
+        var bossHealth = other.GetComponentInParent<BossHealth>();
+
+        if (playerHealth != null)
+        {
+            playerHealth.TakeDamage(Mathf.RoundToInt(damage));
+            if (destroyOnHit) Despawn();
+            return;
+        }
+
+        if (enemyHealth != null)
+        {
+            enemyHealth.TakeDamage(Mathf.RoundToInt(damage));
+            if (destroyOnHit) Despawn();
+            return;
+        }
+
+        if (bossHealth != null)
+        {
+            bossHealth.TakeDamage(Mathf.RoundToInt(damage));
+            if (destroyOnHit) Despawn();
+            return;
+        }
+    }
+
 
     void Despawn()
     {
