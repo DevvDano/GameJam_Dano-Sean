@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Ground
   - Projectile
+  - CameraTrigger
   layers:
   - Default
   - TransparentFX
@@ -40,6 +41,15 @@ TagManager:
   - 
   - 
   m_SortingLayers:
+  - name: Background
+    uniqueID: 3525649655
+    locked: 0
+  - name: BackgroundObjects
+    uniqueID: 67536429
+    locked: 0
+  - name: Objects
+    uniqueID: 4087267475
+    locked: 0
   - name: Default
     uniqueID: 0
     locked: 0
