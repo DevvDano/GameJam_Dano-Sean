@@ -980,6 +980,54 @@
                     "isPartOfComposite": false
                 }
             ]
+        },
+        {
+            "name": "Gameplay",
+            "id": "18ba2901-a253-4a46-8c88-bfd235b9680d",
+            "actions": [
+                {
+                    "name": "Fire",
+                    "type": "Button",
+                    "id": "e94bf451-c923-4fad-9ddc-db62a55a9fc9",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "AimPoint",
+                    "type": "Value",
+                    "id": "93e67e94-579a-4062-8d7f-587e5661d015",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "a3610ce4-8e41-45eb-bd83-6e9f46137c4c",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Fire",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "07928c64-f743-4fa7-9d5f-451c74d7e43f",
+                    "path": "<Mouse>/position",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "AimPoint",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
         }
     ],
     "controlSchemes": [
