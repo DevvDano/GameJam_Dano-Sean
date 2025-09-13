@@ -60,18 +60,33 @@ public class PlayerMovement : MonoBehaviour
 
     public void FireProjectile(InputAction.CallbackContext context)
     {
-        if (context.performed)
+        if (!context.performed) return;
+
+        if (projectilePrefab == null || firePoint == null)
         {
-            GameObject projectile = Instantiate(projectilePrefab, firePoint.position, firePoint.rotation);
-            Rigidbody2D projectileRb = projectile.GetComponent<Rigidbody2D>();
-            float direction = Mathf.Sign(transform.localScale.x); // check player facing
-            Vector2 shootDir = new Vector2(direction, 0);
-            projectileRb.AddForce(shootDir * projectileForce, ForceMode2D.Impulse);
-            Destroy(projectile, 5f); // Destroy projectile after 5 seconds
-            Debug.Log("Projectile Fired");
+            Debug.LogError("Projectile prefab or FirePoint not assigned on PlayerMovement!");
+            return;
         }
+
+        GameObject projectile = Instantiate(projectilePrefab, firePoint.position, firePoint.rotation);
+
+        var rb = projectile.GetComponent<Rigidbody2D>();
+        if (rb == null)
+        {
+            Debug.LogError("Projectile prefab needs a Rigidbody2D.");
+            Destroy(projectile);
+            return;
+        }
+
+        float direction = Mathf.Sign(transform.localScale.x);
+        Vector2 shootDir = new Vector2(direction, 0f);
+
+        // For kinematic bullets, set velocity directly
+        rb.linearVelocity = shootDir * projectileForce;
+
     }
-    
+
+
     public void MeleeAttack(InputAction.CallbackContext context)
     {
         if (context.performed)
