@@ -1,29 +1,25 @@
-// GunAiming_Generated.cs
 using UnityEngine;
 
 public class GunAiming_Generated : MonoBehaviour
 {
     [Header("Refs")]
-    [SerializeField] private Transform gunPivot;   // the transform that rotates (weapon root)
-    [SerializeField] private Transform playerRoot; // optional: flip sprite on X
+    [SerializeField] private Transform gunPivot;             // rotates to aim
+    [SerializeField] private SpriteRenderer[] spritesToFlip; // player/gun sprites to mirror visually
 
-    [Header("Tuning")]
-    [SerializeField] private float stickDeadzone = 0.15f;
+    [Header("Input hookup")]
+    [SerializeField] private InputSystem_Actions controls;
 
-    InputSystem_Actions controls;
     Camera cam;
-    Vector2 lastScreenPoint; // from AimPoint
-    Vector2 lastStick;       // from AimStick
+    Vector2 screenPos;
+    Vector2 stick;
+    [SerializeField] float stickDeadzone = 0.15f;
 
     void Awake()
     {
         cam = Camera.main;
-        controls = new InputSystem_Actions();
-
-        // Cache latest values from actions
-        controls.Gameplay.AimPoint.performed += ctx => lastScreenPoint = ctx.ReadValue<Vector2>();
+        if (controls == null) controls = new InputSystem_Actions();
+        controls.Gameplay.AimPoint.performed += c => screenPos = c.ReadValue<Vector2>();
     }
-
     void OnEnable() => controls.Gameplay.Enable();
     void OnDisable() => controls.Gameplay.Disable();
 
@@ -31,20 +27,16 @@ public class GunAiming_Generated : MonoBehaviour
     {
         Vector2 aimDir = Vector2.zero;
 
-        // Prefer right-stick if meaningful input
-        if (lastStick.sqrMagnitude >= stickDeadzone * stickDeadzone)
+        if (stick.sqrMagnitude >= stickDeadzone * stickDeadzone)
         {
-            aimDir = lastStick.normalized;
+            aimDir = stick.normalized;
         }
         else
         {
-            // Mouse/touch: convert screen point to world, then vector from gun to that point
-            if (cam)
-            {
-                var world = cam.ScreenToWorldPoint(new Vector3(lastScreenPoint.x, lastScreenPoint.y, Mathf.Abs(cam.transform.position.z)));
-                Vector2 toCursor = (Vector2)(world - gunPivot.position);
-                if (toCursor.sqrMagnitude > 0.0001f) aimDir = toCursor.normalized;
-            }
+            Vector3 w = cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, 0f));
+            w.z = 0f;
+            Vector2 to = (Vector2)(w - gunPivot.position);
+            if (to.sqrMagnitude > 0.0001f) aimDir = to.normalized;
         }
 
         if (aimDir.sqrMagnitude > 0f)
@@ -52,12 +44,9 @@ public class GunAiming_Generated : MonoBehaviour
             float angle = Mathf.Atan2(aimDir.y, aimDir.x) * Mathf.Rad2Deg;
             gunPivot.rotation = Quaternion.Euler(0, 0, angle);
 
-            if (playerRoot) // optional visual flip
-            {
-                var s = playerRoot.localScale;
-                s.x = Mathf.Abs(s.x) * (aimDir.x >= 0 ? 1f : -1f);
-                playerRoot.localScale = s;
-            }
+            bool facingLeft = aimDir.x < 0f;
+            foreach (var sr in spritesToFlip)
+                if (sr) sr.flipX = facingLeft;
         }
     }
 }

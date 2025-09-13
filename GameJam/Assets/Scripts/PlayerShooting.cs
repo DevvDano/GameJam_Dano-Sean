@@ -1,26 +1,24 @@
-﻿using UnityEngine;
+﻿// PlayerShooting_Generated.cs
+using UnityEngine;
 
 public class PlayerShooting_Generated : MonoBehaviour
 {
     [Header("Refs")]
-    [SerializeField] private Transform firePoint;             // where bullets spawn
-    [SerializeField] private Projectile projectilePrefab;     // assign your bullet prefab
+    [SerializeField] private Transform firePoint;             // muzzle (must point +X)
+    [SerializeField] private Projectile projectilePrefab;     // bullet prefab (has Collider2D + Rigidbody2D)
 
     [Header("Stats")]
     [SerializeField] private float fireRate = 6f;             // bullets per second
     [SerializeField] private float projectileDamage = 10f;    // damage per bullet
 
-    private InputSystem_Actions controls; // generated input class
+    private InputSystem_Actions controls; // generated Input System class
     private bool isFiring;
     private float cooldown;
 
     void Awake()
     {
         controls = new InputSystem_Actions();
-
-        // Fire pressed → start firing
         controls.Gameplay.Fire.started += _ => isFiring = true;
-        // Fire released → stop firing
         controls.Gameplay.Fire.canceled += _ => isFiring = false;
     }
 
@@ -30,7 +28,6 @@ public class PlayerShooting_Generated : MonoBehaviour
     void Update()
     {
         cooldown -= Time.deltaTime;
-
         if (isFiring && cooldown <= 0f)
         {
             Shoot();
@@ -42,12 +39,28 @@ public class PlayerShooting_Generated : MonoBehaviour
     {
         if (!projectilePrefab || !firePoint) return;
 
-        // Spawn projectile
+        // Spawn projectile (unparented so it doesn't inherit Player scaling/flip)
         var proj = Instantiate(projectilePrefab, firePoint.position, firePoint.rotation);
         proj.gameObject.layer = LayerMask.NameToLayer("PlayerProjectile");
 
-        // Ensure firePoint points +X (right) along barrel
-        Vector2 dir = firePoint.right;
-        proj.Initialize(dir, projectileDamage);
+        // Force projectile scale to prefab's native scale (avoids huge/negative scales)
+        proj.transform.localScale = projectilePrefab.transform.localScale;
+
+        // Direction = +X of the barrel
+        Vector2 dir = (Vector2)firePoint.right;
+        proj.Initialize(dir.normalized, projectileDamage);
+
+        // --- Ignore collisions with the Player (so large player collider won't kill the bullet) ---
+        var projCol = proj.GetComponent<Collider2D>();
+        if (projCol != null)
+        {
+            // Get all 2D colliders on the player (root and children)
+            var playerColliders = GetComponentsInParent<Collider2D>();
+            foreach (var pc in playerColliders)
+            {
+                if (pc != null && pc.enabled)
+                    Physics2D.IgnoreCollision(projCol, pc, true);
+            }
+        }
     }
 }
