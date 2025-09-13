@@ -1,45 +1,58 @@
-using UnityEngine;
+﻿using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))]
 public class Projectile : MonoBehaviour
 {
-    [SerializeField] int damage = 1;
-    [SerializeField] float lifetime = 5f; // auto-cleanup if it misses
+    [Header("Flight")]
+    [SerializeField] private float speed = 12f;
+    [SerializeField] private float lifeTime = 5f;
+
+    [Header("Damage")]
+    [SerializeField] private float damage = 10f;
+    [SerializeField] private bool destroyOnHit = true;
+
+    private Vector2 direction = Vector2.right;
+    private Rigidbody2D rb;
+    private Collider2D col;
+
+    public float Damage => damage;
+    public bool DestroyOnHit => destroyOnHit;
 
     void Awake()
     {
-        Destroy(gameObject, lifetime);
+        rb = GetComponent<Rigidbody2D>();
+        col = GetComponent<Collider2D>();
+
+        rb.bodyType = RigidbodyType2D.Kinematic;
+        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+        col.isTrigger = true;
     }
 
-    private void OnTriggerEnter2D(Collider2D other)
+    void OnEnable()
     {
-        // Player
-        var player = other.GetComponent<PlayerHealth>();
-        if (player != null)
-        {
-            player.TakeDamage(damage);
-            Destroy(gameObject);
-            return;
-        }
+        if (lifeTime > 0f)
+            Invoke(nameof(Despawn), lifeTime);
+    }
 
-        //// Enemy
-        //var enemy = other.GetComponent<EnemyHealth>();
-        //if (enemy != null)
-        //{
-        //    enemy.TakeDamage(damage);
-        //    Destroy(gameObject);
-        //    return;
-        //}
+    void OnDisable()
+    {
+        CancelInvoke(nameof(Despawn));
+    }
 
-        // Boss
-        var boss = other.GetComponent<BossHealth>();
-        if (boss != null)
-        {
-            boss.TakeDamage(damage);
-            Destroy(gameObject);
-            return;
-        }
+    void FixedUpdate()
+    {
+        rb.MovePosition(rb.position + direction.normalized * speed * Time.fixedDeltaTime);
+    }
 
-        // If it hits anything else, destroy the object
+    // 👇 THIS is what PlayerShooting_Generated is calling
+    public void Initialize(Vector2 dir, float dmg)
+    {
+        direction = dir.normalized;
+        damage = dmg;
+    }
+
+    void Despawn()
+    {
         Destroy(gameObject);
     }
 }
