@@ -991,9 +991,14 @@ MonoBehaviour:
   toCameraPos: {fileID: 1325822134}
   AlienCamera: {fileID: 767895906}
   cam: {fileID: 767895905}
+  zoomVel: 0
   smoothTime: 2
   zoomSmoothTime: 1
   targetOrthoSize: 8
+  camVelocity: {x: 0, y: 0, z: 0}
+  triggerHit: 0
+  player: {fileID: 0}
+  playerRigidbody: {fileID: 0}
 --- !u!1 &387948548
 GameObject:
   m_ObjectHideFlags: 0
@@ -1030,7 +1035,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GunAiming_Generated
   gunPivot: {fileID: 427364999}
-  playerRoot: {fileID: 387948556}
+  spritesToFlip: []
   stickDeadzone: 0.15
 --- !u!114 &387948550
 MonoBehaviour:
