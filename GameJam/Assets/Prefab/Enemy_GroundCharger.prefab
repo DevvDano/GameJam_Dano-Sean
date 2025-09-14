@@ -120,7 +120,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
 --- !u!61 &7999585034911154011
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -197,9 +197,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyGroundCharger
   patrolSpeed: 2
-  leftBound: {fileID: 0}
-  rightBound: {fileID: 0}
-  aggroRange: 6
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 64
+  wallCheckDistance: 0.16
+  ledgeCheckDistance: 0.17
+  skin: 0.04
+  groundedRadius: 0.08
+  turnCheckHold: 0.1
+  flipCooldown: 0.28
+  aggroRange: 4.41
   windupTime: 0.35
   chargeSpeed: 6
   chargeDuration: 0.35
