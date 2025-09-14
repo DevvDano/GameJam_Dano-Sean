@@ -989,13 +989,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UFOTrigger
   focusTarget: {fileID: 1325822134}
-  panDuration: 2
-  yOffset: 0
+  panDuration: 4
+  yOffset: 5
   panX: 0
   changeZoom: 1
   targetOrthoSize: 8
-  zoomDuration: 3
-  zoomDelay: 0
+  zoomDuration: 2.5
+  zoomDelay: 0.2
   lockNewYAfter: 1
   setOverrideTarget: 1
   oneShot: 1
@@ -1010,8 +1010,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d2e544423f4d0f74b945e2cf6167ceb7, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpwardTransformTrigger2D
-  distanceY: 4
+  m_EditorClassIdentifier: '::'
+  upwardForce: 5
 --- !u!1 &387948548
 GameObject:
   m_ObjectHideFlags: 0
@@ -1273,7 +1273,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.1346879, y: 0.00524354}
+  m_Offset: {x: -0.14319849, y: 0.00524354}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -1283,7 +1283,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1.0976839, y: 2.5521379}
+  m_Size: {x: 1.0806627, y: 2.5521379}
   m_EdgeRadius: 0
 --- !u!50 &387948554
 Rigidbody2D:
@@ -1379,7 +1379,7 @@ Transform:
   m_GameObject: {fileID: 387948548}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 33.99, y: 2.68, z: 0}
+  m_LocalPosition: {x: 32.111, y: 2.158, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2016,7 +2016,7 @@ Transform:
   m_GameObject: {fileID: 699656370}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.8567, y: 7.1298, z: 0}
+  m_LocalPosition: {x: 3.8567, y: 10.71, z: 0}
   m_LocalScale: {x: 22.968985, y: -0.8674597, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2148,22 +2148,13 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 767895906}
-  - component: {fileID: 767895904}
   m_Layer: 0
-  m_Name: AlienScenePos
+  m_Name: Alien Scene Camera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!81 &767895904
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 767895902}
-  m_Enabled: 1
 --- !u!4 &767895906
 Transform:
   m_ObjectHideFlags: 0
@@ -2374,7 +2365,7 @@ Transform:
   m_GameObject: {fileID: 816683097}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 2.8582497, y: 7.5640492, z: 0}
+  m_LocalPosition: {x: 2.8582497, y: 11.144249, z: 0}
   m_LocalScale: {x: 8.5368, y: 0.7584, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2603,7 +2594,7 @@ Transform:
   m_GameObject: {fileID: 887565510}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -19.99, y: 3.7925, z: 0}
+  m_LocalPosition: {x: -20.12, y: 3.7925, z: 0}
   m_LocalScale: {x: 0.98, y: 10.14257, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3548,7 +3539,7 @@ Transform:
   m_GameObject: {fileID: 1325822133}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.24, y: 2.01, z: 0}
+  m_LocalPosition: {x: 3.24, y: 2.3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4065,7 +4056,7 @@ Transform:
   m_GameObject: {fileID: 1830529560}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 2.74, y: 8.65, z: 0}
+  m_LocalPosition: {x: 2.74, y: 12.2302, z: 0}
   m_LocalScale: {x: 4.623531, y: 0.83090305, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
