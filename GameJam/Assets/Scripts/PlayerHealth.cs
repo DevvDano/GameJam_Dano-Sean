@@ -12,7 +12,7 @@ public class PlayerHealth : MonoBehaviour
     [SerializeField] AudioSource hurtSfx;
     [SerializeField] AudioSource deathSfx;
 
-    int hp;
+    public int hp;
     bool invulnerable;
 
     void Awake()
@@ -59,7 +59,14 @@ public class PlayerHealth : MonoBehaviour
         Destroy(gameObject); 
     }
 
+    // Current Health Methods
 
+    // Add Health Method, by raising maxHp and hp by amount
+    public void AddHealth(int amount)
+    {
+        maxHP += Mathf.Max(1, amount);
+        hp += Mathf.Max(1, amount);
+    }
     public void Heal(int amount) => hp = Mathf.Min(maxHP, hp + Mathf.Max(1, amount));
     public int CurrentHP => hp;
     public int MaxHP => maxHP;
