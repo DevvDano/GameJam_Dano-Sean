@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 7999585034911154011}
   - component: {fileID: 4677987304567064987}
   - component: {fileID: 7938355357982330010}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Enemy_GroundCharger
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -201,6 +201,6 @@ MonoBehaviour:
   rightBound: {fileID: 0}
   aggroRange: 6
   windupTime: 0.35
-  chargeSpeed: 12
+  chargeSpeed: 6
   chargeDuration: 0.35
   cooldown: 1
