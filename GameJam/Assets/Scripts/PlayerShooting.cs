@@ -4,14 +4,18 @@ using UnityEngine;
 public class PlayerShooting_Generated : MonoBehaviour
 {
     [Header("Refs")]
-    [SerializeField] private Transform firePoint;             // muzzle (must point +X)
-    [SerializeField] private Projectile projectilePrefab;     // bullet prefab (has Collider2D + Rigidbody2D)
+    [SerializeField] private Transform firePoint;
+    [SerializeField] private Projectile projectilePrefab;
+
+    // 👇 Add this
+    [Header("Camera")]
+    [SerializeField] private CameraShake camShake;
 
     [Header("Stats")]
-    [SerializeField] private float fireRate = 6f;             // bullets per second
-    [SerializeField] private float projectileDamage = 10f;    // damage per bullet
+    [SerializeField] private float fireRate = 6f;
+    [SerializeField] private float projectileDamage = 10f;
 
-    private InputSystem_Actions controls; // generated Input System class
+    private InputSystem_Actions controls;
     private bool isFiring;
     private float cooldown;
 
@@ -20,6 +24,9 @@ public class PlayerShooting_Generated : MonoBehaviour
         controls = new InputSystem_Actions();
         controls.Gameplay.Fire.started += _ => isFiring = true;
         controls.Gameplay.Fire.canceled += _ => isFiring = false;
+
+        // 👇 Safety net in case you forget to assign in Inspector
+        if (camShake == null) camShake = FindAnyObjectByType<CameraShake>();
     }
 
     void OnEnable() => controls.Gameplay.Enable();
@@ -39,28 +46,23 @@ public class PlayerShooting_Generated : MonoBehaviour
     {
         if (!projectilePrefab || !firePoint) return;
 
-        // Spawn projectile (unparented so it doesn't inherit Player scaling/flip)
+        // Spawn and init
         var proj = Instantiate(projectilePrefab, firePoint.position, firePoint.rotation);
         proj.gameObject.layer = LayerMask.NameToLayer("PlayerProjectile");
-
-        // Force projectile scale to prefab's native scale (avoids huge/negative scales)
         proj.transform.localScale = projectilePrefab.transform.localScale;
-
-        // Direction = +X of the barrel
-        Vector2 dir = (Vector2)firePoint.right;
+        Vector2 dir = (Vector2)firePoint.right;        // Make sure your muzzle points +X
         proj.Initialize(dir.normalized, projectileDamage);
 
-        // --- Ignore collisions with the Player (so large player collider won't kill the bullet) ---
+        // Ignore player collisions (your existing code)
         var projCol = proj.GetComponent<Collider2D>();
         if (projCol != null)
         {
-            // Get all 2D colliders on the player (root and children)
             var playerColliders = GetComponentsInParent<Collider2D>();
             foreach (var pc in playerColliders)
-            {
-                if (pc != null && pc.enabled)
-                    Physics2D.IgnoreCollision(projCol, pc, true);
-            }
+                if (pc != null && pc.enabled) Physics2D.IgnoreCollision(projCol, pc, true);
         }
+
+        // 👇 Shake right as the projectile leaves the gun
+        if (camShake != null) camShake.Shake(0.12f, 0.18f, 40f);
     }
 }
