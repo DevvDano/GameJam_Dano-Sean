@@ -17,7 +17,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float coyoteTime = 0.1f;
     [SerializeField] private float jumpBufferTime = 0.1f;
 
-    // === NEW: Double Jump ===
+    // === Double Jump ===
     [SerializeField] private int maxAirJumps = 1;   // 1 = classic double jump (one extra jump in air)
     private int airJumpsUsed = 0;
 
@@ -39,8 +39,44 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float invincibleExtraTime = 0.08f; // small grace after dash ends
     [SerializeField] private Color dashTint = new Color(1f, 0.25f, 0.25f, 1f);
 
-    // If set, we’ll tint ONLY these renderers (drag your Graphics' SpriteRenderer here)
+    // Tint targets (OPTIONAL: drag specific sprite renderers here)
     [SerializeField] private SpriteRenderer[] tintTargets;
+
+    // ===== GLITCH UPGRADES (unlocked after run completion) =====
+    [Header("Glitch Upgrades")]
+    [Tooltip("Enable after completing a run to upgrade dash into a phasing 'glitch dash'.")]
+    [SerializeField] public bool glitchDashUnlocked = false;
+
+    [Tooltip("Enable after completing a later run to upgrade double jump into a blink teleport (toward mouse). Includes glitch dash too.")]
+    [SerializeField] public bool glitchDoubleJumpUnlocked = false;
+
+    [Tooltip("Name of the layer that does NOT collide with world/enemies (configure in Physics 2D matrix).")]
+    [SerializeField] private string ghostLayerName = "PlayerGhost";
+
+    // === Glitch Blink (to mouse) ===
+    [Header("Glitch Blink (Double Jump)")]
+    [Tooltip("Max distance to blink toward the mouse cursor.")]
+    [SerializeField] private float blinkMaxDistance = 5f;
+
+    [Tooltip("If the mouse is closer than max distance, blink exactly to it.")]
+    [SerializeField] private bool stopAtMouseIfCloser = true;
+
+    [Tooltip("Optional extra vertical boost added to the blink target.")]
+    [SerializeField] private float blinkUpBoost = 0f;
+
+    [Tooltip("How fast the RGB glitch cycles (bigger = faster).")]
+    [SerializeField] private float rgbCycleSpeed = 10f;
+
+    // ===== AUDIO =====
+    [Header("Audio")]
+    [SerializeField] private AudioSource sfxSource;   // drag an AudioSource (SFX) here (2D or 3D)
+    [Space(4)]
+    [SerializeField] private AudioClip dashSfx;           // normal dash
+    [SerializeField] private AudioClip dashGlitchSfx;     // glitch dash
+    [SerializeField] private AudioClip jumpSfx;           // ground jump (optional)
+    [SerializeField] private AudioClip doubleJumpSfx;     // normal air jump
+    [SerializeField] private AudioClip glitchBlinkSfx;    // glitch double jump blink
+    [SerializeField] private bool logSfxChoices = true;   // debug which clip is chosen
 
     private float horizontal;
     private float coyoteCounter;
@@ -57,10 +93,15 @@ public class PlayerMovement : MonoBehaviour
     // i-frames flag (public so other scripts can respect it)
     public bool IsInvincible { get; private set; }
 
-    // renderers under graphics for tinting
+    // renderers under graphics for tinting/RGB
     private SpriteRenderer[] spriteRenderers;
     private Color[] originalColors;
     private MaterialPropertyBlock mpb;
+
+    // glitch helpers
+    private int originalLayer;
+    private int ghostLayer = -1;
+    private Coroutine rgbRoutine;
 
     void Reset()
     {
@@ -81,20 +122,17 @@ public class PlayerMovement : MonoBehaviour
         }
         else if (graphics)
         {
-            // Find under graphics (including itself)
             var found = graphics.GetComponentsInChildren<SpriteRenderer>(true);
             if (found != null && found.Length > 0)
                 spriteRenderers = found;
             else
             {
-                // Fallback: try on graphics directly
                 var sr = graphics.GetComponent<SpriteRenderer>();
                 if (sr) spriteRenderers = new SpriteRenderer[] { sr };
             }
         }
         else
         {
-            // Last resort: search under this object
             spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
         }
 
@@ -104,12 +142,12 @@ public class PlayerMovement : MonoBehaviour
             for (int i = 0; i < spriteRenderers.Length; i++)
                 originalColors[i] = spriteRenderers[i].color;
             mpb = new MaterialPropertyBlock();
-            Debug.Log($"[DashTint] Found {spriteRenderers.Length} SpriteRenderer(s) to tint.");
         }
-        else
-        {
-            Debug.LogWarning("[DashTint] No SpriteRenderers found. Assign them in 'tintTargets' on PlayerMovement.");
-        }
+
+        originalLayer = gameObject.layer;
+        ghostLayer = LayerMask.NameToLayer(ghostLayerName);
+        if (ghostLayer == -1)
+            Debug.LogWarning($"[Glitch] Layer '{ghostLayerName}' not found. Create it and set collision matrix.");
     }
 
     void Update()
@@ -130,7 +168,6 @@ public class PlayerMovement : MonoBehaviour
         {
             if (jumpBufferCounter > 0f)
             {
-                // Buffered ground jump only (we don't buffer air jumps)
                 if (coyoteCounter > 0f) { DoJump(); jumpBufferCounter = 0f; }
                 else jumpBufferCounter -= Time.deltaTime;
             }
@@ -187,25 +224,35 @@ public class PlayerMovement : MonoBehaviour
             if (coyoteCounter > 0f)
             {
                 animator?.SetTrigger("Jump");
+                PlaySfx(jumpSfx);          // ground jump SFX (optional)
                 DoJump();
                 jumpBufferCounter = 0f;
                 return;
             }
 
             // === Air jump (double jump) ===
-            // Not grounded and out of coyote time → try to consume an air jump
             if (!IsGrounded() && airJumpsUsed < maxAirJumps)
             {
                 airJumpsUsed++;
-                // Optional: animator?.SetTrigger("DoubleJump"); // only if you add this param
+
+                // Glitch double jump (blink) vs normal double jump
+                if (glitchDoubleJumpUnlocked)
+                {
+                    PlayAirJumpOrBlinkSfx(true);
+                    StartCoroutine(GlitchBlinkTeleportToMouse());
+                    jumpBufferCounter = 0f;
+                    return;
+                }
+
+                PlayAirJumpOrBlinkSfx(false);
                 DoJump();
-                jumpBufferCounter = 0f; // consume buffer so we don't double-fire
+                jumpBufferCounter = 0f;
                 return;
             }
         }
         else if (ctx.canceled)
         {
-            // Variable jump height cut (works for both ground and air jumps)
+            // Variable jump height cut
             if (playerRigidbody.linearVelocity.y > 0f)
                 playerRigidbody.linearVelocity = new Vector2(
                     playerRigidbody.linearVelocity.x,
@@ -226,7 +273,6 @@ public class PlayerMovement : MonoBehaviour
             if (hasAirDashed) { Debug.Log("[Dash] already air-dashed"); return; }
         }
 
-        Debug.Log("[Dash] start requested");
         StartCoroutine(DashRoutine(facing, grounded));
     }
 
@@ -241,8 +287,17 @@ public class PlayerMovement : MonoBehaviour
         float savedGravity = playerRigidbody.gravityScale;
         playerRigidbody.gravityScale = 0f;
 
-        // I-frames + tint start
-        if (invincibleDuringDash)
+        // SFX (hard-gated)
+        PlayDashSfxBasedOnState();
+
+        // Glitch dash effects vs normal dash effects
+        if (glitchDashUnlocked)
+        {
+            StartGlitchPhase(true);
+            StartRGBEffect(dashDuration + invincibleExtraTime);
+            IsInvincible = true;
+        }
+        else if (invincibleDuringDash)
         {
             IsInvincible = true;
             ApplyDashTint(true);
@@ -261,12 +316,18 @@ public class PlayerMovement : MonoBehaviour
         playerRigidbody.gravityScale = savedGravity;
         isDashing = false;
 
-        // tiny grace window after dash
-        if (invincibleDuringDash && invincibleExtraTime > 0f)
+        // small grace window after dash (only for non-glitch dash)
+        if (invincibleDuringDash && !glitchDashUnlocked && invincibleExtraTime > 0f)
             yield return new WaitForSeconds(invincibleExtraTime);
 
-        // I-frames + tint end
-        if (invincibleDuringDash)
+        // stop effects
+        if (glitchDashUnlocked)
+        {
+            StartGlitchPhase(false);
+            StopRGBEffect();
+            IsInvincible = false;
+        }
+        else if (invincibleDuringDash)
         {
             IsInvincible = false;
             ApplyDashTint(false);
@@ -275,8 +336,36 @@ public class PlayerMovement : MonoBehaviour
         // cooldown
         yield return new WaitForSeconds(dashCooldown);
         dashReady = true;
+    }
 
-        Debug.Log("[Dash] end");
+    // === Glitch Blink Teleport (DOUBLE JUMP) → toward mouse ===
+    private IEnumerator GlitchBlinkTeleportToMouse()
+    {
+        StartGlitchPhase(true);
+        StartRGBEffect(0.12f); // short RGB pop
+
+        Vector3 start = transform.position;
+        Vector3 mouseWorld = GetMouseWorld();
+        Vector2 toMouse = (mouseWorld - start);
+        float dist = toMouse.magnitude;
+
+        if (dist < 0.05f)
+            toMouse = new Vector2((facing >= 0 ? 1f : -1f), 0f);
+
+        float travel = stopAtMouseIfCloser ? Mathf.Min(blinkMaxDistance, dist) : blinkMaxDistance;
+        Vector3 target = start + (Vector3)(toMouse.normalized * Mathf.Max(0.0f, travel));
+
+        target.y += blinkUpBoost; // optional vertical spice
+
+        transform.position = target;
+
+        if (playerRigidbody.linearVelocity.y < 0f)
+            playerRigidbody.linearVelocity = new Vector2(playerRigidbody.linearVelocity.x, 0f);
+
+        yield return new WaitForSeconds(0.05f);
+
+        StartGlitchPhase(false);
+        StopRGBEffect();
     }
 
     // === Helpers ===
@@ -294,6 +383,24 @@ public class PlayerMovement : MonoBehaviour
             groundCheck.position, groundCheckSize, CapsuleDirection2D.Horizontal, 0f, groundLayer);
     }
 
+    private Vector3 GetMouseWorld()
+    {
+        var cam = Camera.main;
+        if (!cam) return transform.position;
+
+        Vector3 sp;
+#if ENABLE_INPUT_SYSTEM
+        sp = Mouse.current != null ? (Vector3)Mouse.current.position.ReadValue()
+                                   : (Vector3)Input.mousePosition;
+#else
+        sp = Input.mousePosition;
+#endif
+        var world = cam.ScreenToWorldPoint(sp);
+        world.z = transform.position.z; // stay on player's z-plane
+        return world;
+    }
+
+    // ----- Simple dash tint (used only for NON-glitch dash) -----
     private void ApplyDashTint(bool on)
     {
         if (spriteRenderers == null || spriteRenderers.Length == 0) return;
@@ -305,10 +412,8 @@ public class PlayerMovement : MonoBehaviour
 
             if (on)
             {
-                // 1) classic vertex color
                 sr.color = dashTint;
 
-                // 2) MPB for common shader color names
                 if (mpb == null) mpb = new MaterialPropertyBlock();
                 sr.GetPropertyBlock(mpb);
                 if (sr.sharedMaterial && sr.sharedMaterial.HasProperty("_Color"))
@@ -326,6 +431,108 @@ public class PlayerMovement : MonoBehaviour
                 mpb.Clear();
                 sr.SetPropertyBlock(mpb);
             }
+        }
+    }
+
+    // ----- Glitch PHASE toggling (layer swap to ignore collisions) -----
+    private void StartGlitchPhase(bool on)
+    {
+        if (ghostLayer == -1) return; // not configured
+        if (on)
+        {
+            gameObject.layer = ghostLayer;
+            // If you have child colliders on different objects, set their layers here too if needed.
+        }
+        else
+        {
+            gameObject.layer = originalLayer;
+        }
+    }
+
+    // ----- Glitch RGB effect -----
+    private void StartRGBEffect(float duration)
+    {
+        StopRGBEffect();
+        rgbRoutine = StartCoroutine(RGBPulse(duration));
+    }
+
+    private void StopRGBEffect()
+    {
+        if (rgbRoutine != null) StopCoroutine(rgbRoutine);
+        rgbRoutine = null;
+        if (spriteRenderers == null) return;
+        for (int i = 0; i < spriteRenderers.Length; i++)
+        {
+            if (!spriteRenderers[i]) continue;
+            var restore = (originalColors != null && i < originalColors.Length) ? originalColors[i] : Color.white;
+            spriteRenderers[i].color = restore;
+
+            if (mpb == null) mpb = new MaterialPropertyBlock();
+            mpb.Clear();
+            spriteRenderers[i].SetPropertyBlock(mpb);
+        }
+    }
+
+    private IEnumerator RGBPulse(float duration)
+    {
+        if (spriteRenderers == null || spriteRenderers.Length == 0) yield break;
+
+        float t = 0f;
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            float hue = Mathf.Repeat(Time.time * rgbCycleSpeed, 1f);
+            Color c = Color.HSVToRGB(hue, 1f, 1f);
+
+            for (int i = 0; i < spriteRenderers.Length; i++)
+            {
+                var sr = spriteRenderers[i];
+                if (!sr) continue;
+                sr.color = c;
+
+                if (mpb == null) mpb = new MaterialPropertyBlock();
+                sr.GetPropertyBlock(mpb);
+                if (sr.sharedMaterial && sr.sharedMaterial.HasProperty("_Color"))
+                    mpb.SetColor("_Color", c);
+                if (sr.sharedMaterial && sr.sharedMaterial.HasProperty("_BaseColor"))
+                    mpb.SetColor("_BaseColor", c);
+                sr.SetPropertyBlock(mpb);
+            }
+
+            yield return null;
+        }
+    }
+
+    // ----- Audio helpers -----
+    private void PlayDashSfxBasedOnState()
+    {
+        // If you want glitchDoubleJumpUnlocked to imply glitch dash sound, keep the OR.
+        bool glitchedDash = glitchDashUnlocked || glitchDoubleJumpUnlocked;
+        AudioClip clip = glitchedDash ? dashGlitchSfx : dashSfx;
+        if (logSfxChoices)
+            Debug.Log($"[SFX] Dash glitched={glitchedDash}, clip={(clip ? clip.name : "null")}");
+        PlaySfx(clip);
+    }
+
+    private void PlayAirJumpOrBlinkSfx(bool isGlitchBlink)
+    {
+        AudioClip clip = isGlitchBlink ? glitchBlinkSfx : doubleJumpSfx;
+        if (logSfxChoices)
+            Debug.Log($"[SFX] AirJump glitched={isGlitchBlink}, clip={(clip ? clip.name : "null")}");
+        PlaySfx(clip);
+    }
+
+    private void PlaySfx(AudioClip clip, float volume = 1f)
+    {
+        if (!clip) return;
+
+        if (sfxSource != null)
+        {
+            sfxSource.PlayOneShot(clip, volume);
+        }
+        else
+        {
+            AudioSource.PlayClipAtPoint(clip, transform.position, volume);
         }
     }
 
