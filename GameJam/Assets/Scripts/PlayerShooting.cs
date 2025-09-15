@@ -4,14 +4,20 @@ using UnityEngine;
 public class PlayerShooting_Generated : MonoBehaviour
 {
     [Header("Refs")]
-    [SerializeField] private Transform firePoint;             // muzzle (must point +X)
-    [SerializeField] private Projectile projectilePrefab;     // bullet prefab (has Collider2D + Rigidbody2D)
+    [SerializeField] private Transform firePoint;             // must point +X along barrel
+    [SerializeField] private Projectile projectilePrefab;
 
     [Header("Stats")]
     [SerializeField] private float fireRate = 6f;             // bullets per second
-    [SerializeField] private float projectileDamage = 10f;    // damage per bullet
+    [SerializeField] private float projectileDamage = 10f;
 
-    private InputSystem_Actions controls; // generated Input System class
+    [Header("FX")]
+    [SerializeField] private CameraShake camShake;          // drag CameraRig here
+    [SerializeField] private ParticleSystem muzzleFlash;      // under firePoint, Loop OFF, RateOverTime 0
+    [SerializeField] private AudioSource gunshotSfx;          // on Player, Loop OFF
+    [SerializeField] private AudioClip gunshotClip;           // assign clip
+
+    private InputSystem_Actions controls; // generated input
     private bool isFiring;
     private float cooldown;
 
@@ -19,7 +25,15 @@ public class PlayerShooting_Generated : MonoBehaviour
     {
         controls = new InputSystem_Actions();
         controls.Gameplay.Fire.started += _ => isFiring = true;
-        controls.Gameplay.Fire.canceled += _ => isFiring = false;
+        controls.Gameplay.Fire.canceled += _ =>
+        {
+            isFiring = false;
+            if (muzzleFlash)
+                muzzleFlash.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        };
+
+        if (camShake == null)
+            camShake = FindAnyObjectByType<CameraShake>();
     }
 
     void OnEnable() => controls.Gameplay.Enable();
@@ -39,28 +53,36 @@ public class PlayerShooting_Generated : MonoBehaviour
     {
         if (!projectilePrefab || !firePoint) return;
 
-        // Spawn projectile (unparented so it doesn't inherit Player scaling/flip)
+        // 1) Spawn projectile
         var proj = Instantiate(projectilePrefab, firePoint.position, firePoint.rotation);
         proj.gameObject.layer = LayerMask.NameToLayer("PlayerProjectile");
-
-        // Force projectile scale to prefab's native scale (avoids huge/negative scales)
         proj.transform.localScale = projectilePrefab.transform.localScale;
 
-        // Direction = +X of the barrel
-        Vector2 dir = (Vector2)firePoint.right;
+        // 2) Initialize direction/damage
+        Vector2 dir = (Vector2)firePoint.right; // make sure firePoint +X is forward
         proj.Initialize(dir.normalized, projectileDamage);
 
-        // --- Ignore collisions with the Player (so large player collider won't kill the bullet) ---
+        // 3) Ignore player collisions
         var projCol = proj.GetComponent<Collider2D>();
         if (projCol != null)
         {
-            // Get all 2D colliders on the player (root and children)
             var playerColliders = GetComponentsInParent<Collider2D>();
             foreach (var pc in playerColliders)
-            {
-                if (pc != null && pc.enabled)
-                    Physics2D.IgnoreCollision(projCol, pc, true);
-            }
+                if (pc && pc.enabled) Physics2D.IgnoreCollision(projCol, pc, true);
         }
+
+        // 4) Camera shake
+        camShake?.Shake(0.12f, 0.18f, 40f);
+
+        // 5) Muzzle flash (one-shot burst, no looping)
+        if (muzzleFlash)
+        {
+            muzzleFlash.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            muzzleFlash.Emit(Random.Range(8, 14));
+        }
+
+        // 6) Gunshot audio
+        if (gunshotSfx && gunshotClip)
+            gunshotSfx.PlayOneShot(gunshotClip);
     }
 }
