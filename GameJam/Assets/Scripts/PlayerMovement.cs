@@ -434,6 +434,12 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    public void SetMaxAirJumps(int value)
+    {
+        maxAirJumps = value;
+    }
+
+
     // ----- Glitch PHASE toggling (layer swap to ignore collisions) -----
     private void StartGlitchPhase(bool on)
     {
@@ -502,6 +508,17 @@ public class PlayerMovement : MonoBehaviour
             yield return null;
         }
     }
+
+    public void SetDashDuration(float value)
+    {
+        dashDuration = value;
+    }
+
+public void EnableGlitchUpgrades()
+{
+    glitchDashUnlocked = true;
+    glitchDoubleJumpUnlocked = true;
+}
 
     // ----- Audio helpers -----
     private void PlayDashSfxBasedOnState()
