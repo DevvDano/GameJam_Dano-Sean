@@ -19,8 +19,8 @@ TagManager:
   - Enemy
   - PlayerProjectile
   - EnemyProjectile
-  - 
-  - 
+  - PlayerGhost
+  - Wall
   - 
   - 
   - 
