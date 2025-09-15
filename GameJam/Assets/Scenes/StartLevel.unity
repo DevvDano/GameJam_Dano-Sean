@@ -1067,6 +1067,7 @@ MonoBehaviour:
   animator: {fileID: 0}
   hurtSfx: {fileID: 0}
   deathSfx: {fileID: 0}
+  hp: 0
 --- !u!114 &387948551
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1379,7 +1380,7 @@ Transform:
   m_GameObject: {fileID: 387948548}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 41.77, y: 6.21, z: 0}
+  m_LocalPosition: {x: -4.04, y: 5.04, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -4431,8 +4432,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Follow_player
   player: {fileID: 387948556}
+  useFixedY: 1
   fixedY: 4.25
   fixedZ: -10
+  smoothSpeed: 5
 --- !u!114 &2104633016
 MonoBehaviour:
   m_ObjectHideFlags: 0
