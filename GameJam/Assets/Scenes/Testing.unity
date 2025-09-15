@@ -718,12 +718,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 280083123}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -6.24463, y: -0.2745, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 4.86537, y: 1.0955, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1419222458}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &325105681
 GameObject:
@@ -754,9 +754,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 549af3c05b59bd54baa3de9b472a0ce0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraShake
-  defaultDuration: 0.1
-  defaultMagnitude: 0.15
-  defaultFrequency: 40
+  defaultDuration: 10
+  defaultMagnitude: 0.03
+  defaultFrequency: 15
+  envelope:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!4 &325105683
 Transform:
   m_ObjectHideFlags: 0
@@ -1754,6 +1778,7 @@ Transform:
   - {fileID: 254033532}
   - {fileID: 569277403}
   - {fileID: 107702761}
+  - {fileID: 280083125}
   - {fileID: 1108248698}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -7422,4 +7447,3 @@ SceneRoots:
   - {fileID: 1375551019}
   - {fileID: 1318101498}
   - {fileID: 1012233913}
-  - {fileID: 280083125}
